@@ -1,0 +1,562 @@
+<title>Gargantua Black Hole</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Jost:wght@300;400&display=swap">
+<style>
+  /* Layout: full-bleed WebGL canvas; HUD pinned to the corners, title top-left, readouts bottom-left, controls bottom-right. */
+  :root {
+    --void: #020306;
+    --ink: #efe6d8;
+    --ink-dim: #9a9285;
+    --ember: #ff9a45;
+    --line: rgba(239, 230, 216, 0.18);
+    --panel: rgba(4, 5, 9, 0.55);
+    --font-display: "Jost", "Century Gothic", "Futura", "Avenir Next", system-ui, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--font-display);
+  }
+  #gl, #bloom {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  #gl { touch-action: none; cursor: grab; background: var(--void); }
+  #gl:active { cursor: grabbing; }
+  #gl:focus-visible { outline: 2px solid var(--ember); outline-offset: -4px; }
+  #bloom {
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.3;
+    filter: blur(16px) saturate(1.3);
+  }
+  .hud {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-block: calc(18px + env(safe-area-inset-top, 0px)) calc(18px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    pointer-events: none;
+  }
+  .hud > * { min-width: 0; }
+  h1 {
+    margin: 0;
+    font-weight: 300;
+    font-size: clamp(1.3rem, 4.2vw, 2.1rem);
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .sub {
+    margin: 0.55rem 0 0;
+    font-family: var(--font-data);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-dim);
+    max-width: 38ch;
+    line-height: 1.5;
+  }
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px 20px;
+  }
+  dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 3px 16px;
+    font-family: var(--font-data);
+    font-size: 0.72rem;
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  dt { color: var(--ink-dim); }
+  dd { margin: 0; text-align: right; color: var(--ink); }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    pointer-events: auto;
+  }
+  button {
+    font: 400 0.72rem/1 var(--font-data);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--ember); }
+  button:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+  button[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
+  #nogl {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    padding: 24px;
+    text-align: center;
+    font-family: var(--font-data);
+    font-size: 0.85rem;
+    color: var(--ink-dim);
+    background: var(--void);
+  }
+  @media (max-width: 520px) {
+    h1 { letter-spacing: 0.3em; }
+    dl { font-size: 0.68rem; }
+  }
+</style>
+
+<canvas id="gl" tabindex="0" aria-label="Ray-traced black hole with a lensed accretion disk. Drag to orbit, scroll or pinch to zoom."></canvas>
+<canvas id="bloom" aria-hidden="true"></canvas>
+
+<div class="hud">
+  <header>
+    <h1>Gargantua</h1>
+    <p class="sub">Light paths integrated through a Schwarzschild metric, one ray per pixel. Drag to orbit, scroll to move closer.</p>
+  </header>
+  <div class="foot">
+    <dl>
+      <dt>Observer</dt><dd id="r-obs">18.0 rs</dd>
+      <dt>Inclination</dt><dd id="r-inc">82°</dd>
+      <dt>Disk inner edge</dt><dd>3.0 rs</dd>
+      <dt>Photon sphere</dt><dd>1.5 rs</dd>
+      <dt>Render</dt><dd id="r-perf">–</dd>
+    </dl>
+    <div class="controls">
+      <button id="b-dopp" type="button" aria-pressed="true">Doppler beaming</button>
+      <button id="b-auto" type="button" aria-pressed="true">Auto orbit</button>
+      <button id="b-reset" type="button">Reset view</button>
+    </div>
+  </div>
+</div>
+
+<div id="nogl" hidden>WebGL is not available in this browser, so the black hole cannot be rendered here.</div>
+
+<script id="vs" type="x-shader/x-vertex">
+attribute vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
+</script>
+
+<script id="fs" type="x-shader/x-fragment">
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+
+uniform vec2 uRes;
+uniform float uTime;
+uniform vec3 uPos;
+uniform vec3 uRight;
+uniform vec3 uUp;
+uniform vec3 uFwd;
+uniform float uTan;
+uniform int uSteps;
+uniform float uDoppler;
+
+const float RIN = 3.0;    // innermost stable circular orbit, in Schwarzschild radii
+const float ROUT = 12.0;
+
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+
+float hash31(vec3 p) {
+  p = fract(p * 0.3183099 + 0.1);
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+// value noise that wraps around in its second coordinate with period N
+float pn(vec2 p, float N) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float y0 = mod(i.y, N);
+  float y1 = mod(i.y + 1.0, N);
+  float a = hash21(vec2(i.x, y0));
+  float b = hash21(vec2(i.x + 1.0, y0));
+  float c = hash21(vec2(i.x, y1));
+  float d = hash21(vec2(i.x + 1.0, y1));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float noise3(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash31(i);
+  float b = hash31(i + vec3(1.0, 0.0, 0.0));
+  float c = hash31(i + vec3(0.0, 1.0, 0.0));
+  float d = hash31(i + vec3(1.0, 1.0, 0.0));
+  float e = hash31(i + vec3(0.0, 0.0, 1.0));
+  float g = hash31(i + vec3(1.0, 0.0, 1.0));
+  float h = hash31(i + vec3(0.0, 1.0, 1.0));
+  float k = hash31(i + vec3(1.0, 1.0, 1.0));
+  return mix(mix(mix(a, b, f.x), mix(c, d, f.x), f.y),
+             mix(mix(e, g, f.x), mix(h, k, f.x), f.y), f.z);
+}
+
+float diskDensity(float r, float phi, float t) {
+  float w = 1.6 / (r * sqrt(r));          // Keplerian shear
+  float a = phi / 6.2831853 - t * w;
+  float n = 0.0;
+  float amp = 0.5;
+  float N = 18.0;
+  float rs = 3.0;
+  for (int k = 0; k < 4; k++) {
+    n += amp * pn(vec2(r * rs, a * N), N);
+    amp *= 0.5;
+    rs *= 2.0;
+    N *= 2.0;
+  }
+  return n;
+}
+
+vec3 blackbody(float t) {
+  t = clamp(t, 0.0, 2.0);
+  vec3 c = mix(vec3(0.5, 0.1, 0.02), vec3(1.0, 0.42, 0.12), smoothstep(0.1, 0.5, t));
+  c = mix(c, vec3(1.0, 0.86, 0.68), smoothstep(0.4, 1.0, t));
+  c = mix(c, vec3(0.85, 0.92, 1.0), smoothstep(1.0, 1.8, t));
+  return c;
+}
+
+float starLayer(vec3 d, float s, float th) {
+  vec3 q = d * s;
+  vec3 id = floor(q);
+  vec3 f = fract(q);
+  float h = hash31(id);
+  if (h < th) return 0.0;
+  vec3 c = vec3(hash31(id + 7.1), hash31(id + 13.3), hash31(id + 21.7)) * 0.6 + 0.2;
+  float dist = length(f - c);
+  return smoothstep(0.14, 0.0, dist) * (h - th) / (1.0 - th);
+}
+
+vec3 sky(vec3 d) {
+  vec3 col = vec3(0.004, 0.005, 0.010);
+  float band = dot(d, normalize(vec3(0.3, 0.9, 0.2)));
+  float m = exp(-band * band * 14.0);
+  float n = noise3(d * 3.0) * 0.55 + noise3(d * 7.0) * 0.3 + noise3(d * 15.0) * 0.15;
+  col += vec3(0.014, 0.013, 0.018) * m * (0.25 + n * 1.2);
+  float s1 = starLayer(d, 70.0, 0.965);
+  float s2 = starLayer(d, 160.0, 0.975);
+  float s3 = starLayer(d + 3.7, 320.0, 0.985);
+  float tint = hash31(floor(d * 70.0) + 5.0);
+  vec3 sc = mix(vec3(1.0, 0.78, 0.55), vec3(0.7, 0.82, 1.0), tint);
+  col += sc * (s1 * 2.4 + s2 * 1.6 + s3 * 1.1) * (0.6 + m * 1.4);
+  return col;
+}
+
+void main() {
+  vec2 frag = gl_FragCoord.xy;
+  vec2 uv = (frag - 0.5 * uRes) / min(uRes.x, uRes.y) * 2.0;
+  vec3 dir = normalize(uFwd + (uv.x * uRight + uv.y * uUp) * uTan);
+
+  vec3 p = uPos;
+  vec3 v = dir;
+  vec3 col = vec3(0.0);
+  float trans = 1.0;
+  bool captured = false;
+  bool escaped = false;
+
+  for (int i = 0; i < 320; i++) {
+    if (i >= uSteps) break;
+    float r2 = dot(p, p);
+    float r = sqrt(r2);
+    if (r < 1.0) { captured = true; break; }
+    if (r > 70.0 && dot(p, v) > 0.0) { escaped = true; break; }
+
+    float dt = clamp(0.07 * (r - 0.8), 0.025, 1.6);
+    vec3 c = cross(p, v);
+    float h2 = dot(c, c);
+    vec3 acc = -1.5 * h2 * p / (r2 * r2 * r);
+    vec3 vn = normalize(v + acc * dt);
+    vec3 pn2 = p + vn * dt;
+
+    // faint glow above and below the disk plane
+    float ar = length(p.xz);
+    float halo = exp(-p.y * p.y * 6.0)
+               * smoothstep(RIN - 1.0, RIN + 1.0, ar)
+               * (1.0 - smoothstep(ROUT - 4.0, ROUT, ar));
+    col += trans * vec3(1.0, 0.5, 0.2) * halo * dt * 0.035 * pow(RIN / max(ar, RIN), 1.5);
+
+    // equatorial plane crossing
+    if (p.y * pn2.y < 0.0) {
+      float f = p.y / (p.y - pn2.y);
+      vec3 hp = mix(p, pn2, f);
+      float hr = length(hp.xz);
+      if (hr > RIN && hr < ROUT) {
+        float phi = atan(hp.z, hp.x);
+        float dens = diskDensity(hr, phi, uTime);
+        float ring = 0.5 + 0.5 * sin(hr * 9.0 + dens * 6.0);
+        dens = dens * 0.8 + ring * 0.2;
+
+        float edge = smoothstep(RIN, RIN + 0.35, hr) * (1.0 - smoothstep(ROUT - 5.0, ROUT, hr));
+        float alpha = clamp(edge * (0.35 + dens * 1.1), 0.0, 1.0);
+
+        // relativistic shift: orbital Doppler plus gravitational redshift
+        vec3 tang = normalize(vec3(-hp.z, 0.0, hp.x));
+        float vorb = min(sqrt(0.5 / (hr - 1.0)), 0.6);
+        vec3 beta = tang * vorb;
+        float gam = 1.0 / sqrt(1.0 - vorb * vorb);
+        float D = 1.0 / (gam * (1.0 + dot(beta, vn)));
+        float g = mix(1.0, clamp(D * sqrt(1.0 - 1.0 / hr), 0.3, 2.2), uDoppler);
+
+        float T = pow(RIN / hr, 0.75);
+        float emis = pow(RIN / hr, 1.6) * (0.55 + 0.9 * dens) * 3.0;
+        vec3 dc = blackbody(T * g) * emis * g * g;
+
+        col += trans * alpha * dc;
+        trans *= (1.0 - alpha);
+        if (trans < 0.02) break;
+      }
+    }
+
+    p = pn2;
+    v = vn;
+  }
+
+  if (!captured && (escaped || dot(p, p) > 64.0)) {
+    col += trans * sky(normalize(v));
+  }
+
+  // tone map, gamma, vignette, grain
+  col = vec3(1.0) - exp(-col * 1.25);
+  col = pow(col, vec3(0.4545));
+  vec2 q = frag / uRes - 0.5;
+  col *= 1.0 - 0.45 * dot(q, q);
+  col += (hash21(frag + fract(uTime) * 91.0) - 0.5) * 0.02;
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<script>
+(function () {
+  var canvas = document.getElementById('gl');
+  var bloom = document.getElementById('bloom');
+  var bctx = bloom.getContext('2d');
+  var nogl = document.getElementById('nogl');
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+  if (!gl) { nogl.hidden = false; return; }
+
+  function compile(type, src) {
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(s));
+      return null;
+    }
+    return s;
+  }
+  var vs = compile(gl.VERTEX_SHADER, document.getElementById('vs').textContent);
+  var fs = compile(gl.FRAGMENT_SHADER, document.getElementById('fs').textContent);
+  if (!vs || !fs) { nogl.hidden = false; return; }
+  var prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(prog));
+    nogl.hidden = false;
+    return;
+  }
+  gl.useProgram(prog);
+
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  var aPos = gl.getAttribLocation(prog, 'aPos');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  var U = {};
+  ['uRes', 'uTime', 'uPos', 'uRight', 'uUp', 'uFwd', 'uTan', 'uSteps', 'uDoppler'].forEach(function (n) {
+    U[n] = gl.getUniformLocation(prog, n);
+  });
+
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  var steps = coarse ? 200 : 280;
+  var scale = coarse ? 0.6 : 0.85;
+  var timeScale = reduced ? 0.2 : 1.0;
+
+  var HOME_PITCH = 0.13;
+  var yaw = 0, pitch = HOME_PITCH, dist = 18;
+  var auto = !reduced, doppler = 1;
+  var phase = 0;
+
+  function homeDist() {
+    var a = window.innerWidth / Math.max(1, window.innerHeight);
+    return a < 1 ? 26 : 18;
+  }
+  dist = homeDist();
+
+  function resize() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    var w = Math.max(2, Math.floor(canvas.clientWidth * dpr * scale));
+    var h = Math.max(2, Math.floor(canvas.clientHeight * dpr * scale));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    var bw = 160;
+    var bh = Math.max(2, Math.round(bw * h / w));
+    if (bloom.width !== bw || bloom.height !== bh) {
+      bloom.width = bw;
+      bloom.height = bh;
+    }
+    gl.viewport(0, 0, w, h);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function norm(a) {
+    var l = Math.hypot(a[0], a[1], a[2]) || 1;
+    return [a[0] / l, a[1] / l, a[2] / l];
+  }
+  function cross(a, b) {
+    return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  }
+
+  // pointer interaction
+  var pointers = {};
+  var lastPinch = 0;
+  function stopAuto() {
+    if (auto) { auto = false; syncButtons(); }
+  }
+  canvas.addEventListener('pointerdown', function (e) {
+    canvas.setPointerCapture(e.pointerId);
+    pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    lastPinch = 0;
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    var p = pointers[e.pointerId];
+    if (!p) return;
+    var ids = Object.keys(pointers);
+    if (ids.length === 2) {
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var a = pointers[ids[0]], b = pointers[ids[1]];
+      var d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (lastPinch) dist = Math.min(40, Math.max(4, dist * lastPinch / d));
+      lastPinch = d;
+      return;
+    }
+    yaw -= (e.clientX - p.x) * 0.005;
+    pitch += (e.clientY - p.y) * 0.005;
+    pitch = Math.min(1.45, Math.max(-1.45, pitch));
+    p.x = e.clientX;
+    p.y = e.clientY;
+    stopAuto();
+  });
+  function endPointer(e) { delete pointers[e.pointerId]; lastPinch = 0; }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    dist = Math.min(40, Math.max(4, dist * Math.exp(e.deltaY * 0.001)));
+  }, { passive: false });
+  canvas.addEventListener('keydown', function (e) {
+    var k = e.key, used = true;
+    if (k === 'ArrowLeft') yaw += 0.08;
+    else if (k === 'ArrowRight') yaw -= 0.08;
+    else if (k === 'ArrowUp') pitch = Math.max(-1.45, pitch - 0.05);
+    else if (k === 'ArrowDown') pitch = Math.min(1.45, pitch + 0.05);
+    else if (k === '+' || k === '=') dist = Math.max(4, dist * 0.92);
+    else if (k === '-') dist = Math.min(40, dist * 1.08);
+    else used = false;
+    if (used) { e.preventDefault(); stopAuto(); }
+  });
+
+  // controls
+  var bD = document.getElementById('b-dopp');
+  var bA = document.getElementById('b-auto');
+  var bR = document.getElementById('b-reset');
+  function syncButtons() {
+    bD.setAttribute('aria-pressed', doppler ? 'true' : 'false');
+    bA.setAttribute('aria-pressed', auto ? 'true' : 'false');
+  }
+  bD.addEventListener('click', function () { doppler = doppler ? 0 : 1; syncButtons(); });
+  bA.addEventListener('click', function () { auto = !auto; syncButtons(); });
+  bR.addEventListener('click', function () {
+    yaw = 0; pitch = HOME_PITCH; dist = homeDist(); phase = 0; auto = !reduced; syncButtons();
+  });
+  syncButtons();
+
+  var rObs = document.getElementById('r-obs');
+  var rInc = document.getElementById('r-inc');
+  var rPerf = document.getElementById('r-perf');
+
+  var t0 = performance.now(), last = t0, ema = 16, frames = 0;
+
+  function frame(now) {
+    var dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    ema = ema * 0.95 + (dt * 1000) * 0.05;
+    var t = (now - t0) / 1000 * timeScale;
+
+    if (auto) {
+      phase += dt;
+      pitch = 0.2 + 0.15 * Math.sin(phase * 0.2);
+      yaw += dt * 0.02;
+    }
+
+    var cp = Math.cos(pitch), sp = Math.sin(pitch);
+    var pos = [dist * cp * Math.cos(yaw), dist * sp, dist * cp * Math.sin(yaw)];
+    var fwd = [-pos[0] / dist, -pos[1] / dist, -pos[2] / dist];
+    var right = norm(cross(fwd, [0, 1, 0]));
+    var up = cross(right, fwd);
+
+    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform1f(U.uTime, t);
+    gl.uniform3f(U.uPos, pos[0], pos[1], pos[2]);
+    gl.uniform3f(U.uRight, right[0], right[1], right[2]);
+    gl.uniform3f(U.uUp, up[0], up[1], up[2]);
+    gl.uniform3f(U.uFwd, fwd[0], fwd[1], fwd[2]);
+    gl.uniform1f(U.uTan, Math.tan(27.5 * Math.PI / 180));
+    gl.uniform1i(U.uSteps, steps);
+    gl.uniform1f(U.uDoppler, doppler);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    try { bctx.drawImage(canvas, 0, 0, bloom.width, bloom.height); } catch (err) {}
+
+    frames++;
+    if (frames % 20 === 0) {
+      rObs.textContent = dist.toFixed(1) + ' rs';
+      rInc.textContent = Math.round(90 - pitch * 180 / Math.PI) + '°';
+      rPerf.textContent = scale.toFixed(2) + '× · ' + Math.round(1000 / ema) + ' fps';
+    }
+    // keep the frame rate usable on weaker GPUs
+    if (frames % 45 === 0 && frames > 90) {
+      if (ema > 40 && scale > 0.35) { scale *= 0.85; resize(); }
+      else if (ema < 17 && scale < 0.85 && !coarse) { scale = Math.min(0.85, scale * 1.1); resize(); }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Planetary Lab</title>
+    <style>
+      :root {
+        --sky: #050b16;
+        --panel: rgba(11, 16, 25, 0.72);
+        --line: rgba(255,255,255,0.08);
+        --text: #edf4ff;
+        --muted: #a9b9d8;
+        --cyan: #7ed8ff;
+        --purple: #b38cff;
+        --gold: #ffc87d;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: Inter, "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(126, 216, 255, 0.18), transparent 24%),
+          radial-gradient(circle at bottom, rgba(179, 140, 255, 0.14), transparent 28%),
+          linear-gradient(180deg, #02070d, var(--sky));
+      }
+
+      .layout {
+        position: relative;
+        width: min(100%, 1180px);
+        min-height: 100vh;
+        padding: 28px;
+        display: grid;
+        place-items: center;
+      }
+
+      .glass {
+        position: relative;
+        width: min(92vw, 960px);
+        min-height: 640px;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        background: rgba(10, 15, 24, 0.52);
+        overflow: hidden;
+        box-shadow: 0 32px 80px rgba(5, 9, 18, 0.55);
+      }
+
+      .glass::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,0.7), transparent),
+          radial-gradient(2px 2px at 75% 25%, rgba(255,255,255,0.6), transparent),
+          radial-gradient(1.5px 1.5px at 80% 70%, rgba(255,255,255,0.7), transparent),
+          radial-gradient(1.8px 1.8px at 40% 80%, rgba(255,255,255,0.5), transparent);
+        opacity: 0.6;
+      }
+
+      .scene {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-height: 640px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .planet-system {
+        position: relative;
+        width: min(72vw, 680px);
+        height: min(72vw, 680px);
+        display: grid;
+        place-items: center;
+      }
+
+      .ring {
+        position: absolute;
+        width: 380px;
+        height: 380px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.18);
+        transform: rotateX(75deg) rotateY(10deg);
+      }
+
+      .sun {
+        position: absolute;
+        width: 164px;
+        height: 164px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #fff7d4, #ffc476 30%, #ff9d3d 54%, #be5019 75%, #2d1b13 100%);
+        box-shadow: 0 0 30px rgba(255, 190, 110, 0.45), 0 0 100px rgba(255, 160, 94, 0.22);
+        animation: pulse 7s ease-in-out infinite;
+      }
+
+      .orbit {
+        position: absolute;
+        width: 240px;
+        height: 240px;
+        border-radius: 50%;
+        border: 1px solid rgba(135, 217, 255, 0.26);
+        animation: spin 18s linear infinite;
+      }
+
+      .orbit.orbit-2 {
+        width: 330px;
+        height: 330px;
+        animation-duration: 26s;
+        border-color: rgba(179, 140, 255, 0.26);
+      }
+
+      .orbit.orbit-3 {
+        width: 430px;
+        height: 430px;
+        animation-duration: 32s;
+        border-color: rgba(255, 200, 125, 0.2);
+      }
+
+      .planet {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        margin-left: -14px;
+        margin-top: -14px;
+        background: linear-gradient(135deg, var(--cyan), #9edeff);
+        box-shadow: 0 0 16px rgba(126, 216, 255, 0.45);
+      }
+
+      .planet.p2 {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #ffd7a8, #ff8cc1);
+        box-shadow: 0 0 20px rgba(255, 170, 204, 0.38);
+      }
+
+      .planet.p3 {
+        width: 42px;
+        height: 42px;
+        background: linear-gradient(135deg, #d9efff, #86d9d0);
+        box-shadow: 0 0 22px rgba(134, 217, 208, 0.38);
+      }
+
+      .orbit .planet {
+        transform: translate(0, -50%);
+      }
+
+      .info {
+        position: absolute;
+        left: 26px;
+        top: 26px;
+        max-width: 280px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(8, 12, 20, 0.42);
+        backdrop-filter: blur(10px);
+        z-index: 2;
+      }
+
+      .info .eyebrow {
+        display: inline-block;
+        margin-bottom: 10px;
+        color: var(--cyan);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+      }
+
+      .info h1 {
+        margin: 0 0 12px;
+        font-size: clamp(1.4rem, 4vw, 2.6rem);
+        letter-spacing: -0.06em;
+      }
+
+      .info p {
+        margin: 0;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .cta {
+        position: absolute;
+        right: 26px;
+        bottom: 26px;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 18px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.14);
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        text-decoration: none;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(0.96);
+          box-shadow: 0 0 30px rgba(255, 190, 110, 0.42), 0 0 100px rgba(255, 160, 94, 0.18);
+        }
+        50% {
+          transform: scale(1.04);
+          box-shadow: 0 0 42px rgba(255, 190, 110, 0.62), 0 0 140px rgba(255, 160, 94, 0.28);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .info {
+          position: static;
+          margin: 20px 20px 0;
+          max-width: none;
+        }
+
+        .glass {
+          padding-bottom: 88px;
+        }
+
+        .cta {
+          right: 20px;
+          bottom: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <div class="glass">
+        <div class="scene">
+          <div class="info">
+            <span class="eyebrow">Planetary Lab</span>
+            <h1>Orbital studies</h1>
+            <p>Atmospheric glow, ring motion, and luminous planets create a soft experimental showcase for motion design in space.</p>
+          </div>
+
+          <div class="planet-system" aria-label="A 3D-inspired solar system with rotating planets">
+            <div class="ring"></div>
+            <div class="orbit orbit-1">
+              <div class="planet"></div>
+            </div>
+            <div class="orbit orbit-2">
+              <div class="planet p2"></div>
+            </div>
+            <div class="orbit orbit-3">
+              <div class="planet p3"></div>
+            </div>
+            <div class="sun"></div>
+          </div>
+
+          <a class="cta" href="./blackhole.html">Back to black hole →</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

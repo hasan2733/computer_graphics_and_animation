@@ -4,7 +4,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Jost:wght@300;400&display=swap">
 <style>
-  /* Layout: full-bleed WebGL canvas; HUD pinned to the corners, title top-left, readouts bottom-left, controls bottom-right. */
   :root {
     --void: #020306;
     --ink: #efe6d8;
@@ -24,6 +23,31 @@
     background: var(--void);
     color: var(--ink);
     font-family: var(--font-display);
+  }
+  .top-back {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(4, 5, 9, 0.6);
+    border: 1px solid rgba(239, 230, 216, 0.18);
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--font-data);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    backdrop-filter: blur(10px);
+  }
+  .top-back:hover {
+    border-color: var(--ember);
+    color: var(--ember);
   }
   #gl, #bloom {
     position: fixed;
@@ -128,6 +152,7 @@
   }
 </style>
 
+<a class="top-back" href="../index.html">← Back</a>
 <canvas id="gl" tabindex="0" aria-label="Ray-traced black hole with a lensed accretion disk. Drag to orbit, scroll or pinch to zoom."></canvas>
 <canvas id="bloom" aria-hidden="true"></canvas>
 
@@ -297,14 +322,12 @@ void main() {
     vec3 vn = normalize(v + acc * dt);
     vec3 pn2 = p + vn * dt;
 
-    // faint glow above and below the disk plane
     float ar = length(p.xz);
     float halo = exp(-p.y * p.y * 6.0)
                * smoothstep(RIN - 1.0, RIN + 1.0, ar)
                * (1.0 - smoothstep(ROUT - 4.0, ROUT, ar));
     col += trans * vec3(1.0, 0.5, 0.2) * halo * dt * 0.035 * pow(RIN / max(ar, RIN), 1.5);
 
-    // equatorial plane crossing
     if (p.y * pn2.y < 0.0) {
       float f = p.y / (p.y - pn2.y);
       vec3 hp = mix(p, pn2, f);
@@ -318,7 +341,6 @@ void main() {
         float edge = smoothstep(RIN, RIN + 0.35, hr) * (1.0 - smoothstep(ROUT - 5.0, ROUT, hr));
         float alpha = clamp(edge * (0.35 + dens * 1.1), 0.0, 1.0);
 
-        // relativistic shift: orbital Doppler plus gravitational redshift
         vec3 tang = normalize(vec3(-hp.z, 0.0, hp.x));
         float vorb = min(sqrt(0.5 / (hr - 1.0)), 0.6);
         vec3 beta = tang * vorb;
@@ -344,7 +366,6 @@ void main() {
     col += trans * sky(normalize(v));
   }
 
-  // tone map, gamma, vignette, grain
   col = vec3(1.0) - exp(-col * 1.25);
   col = pow(col, vec3(0.4545));
   vec2 q = frag / uRes - 0.5;
@@ -443,7 +464,6 @@ void main() {
     return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   }
 
-  // pointer interaction
   var pointers = {};
   var lastPinch = 0;
   function stopAuto() {
@@ -492,7 +512,6 @@ void main() {
     if (used) { e.preventDefault(); stopAuto(); }
   });
 
-  // controls
   var bD = document.getElementById('b-dopp');
   var bA = document.getElementById('b-auto');
   var bR = document.getElementById('b-reset');
@@ -550,7 +569,6 @@ void main() {
       rInc.textContent = Math.round(90 - pitch * 180 / Math.PI) + '°';
       rPerf.textContent = scale.toFixed(2) + '× · ' + Math.round(1000 / ema) + ' fps';
     }
-    // keep the frame rate usable on weaker GPUs
     if (frames % 45 === 0 && frames > 90) {
       if (ema > 40 && scale > 0.35) { scale *= 0.85; resize(); }
       else if (ema < 17 && scale < 0.85 && !coarse) { scale = Math.min(0.85, scale * 1.1); resize(); }

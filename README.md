@@ -4,11 +4,8 @@ A collection of standalone browser-based experiments and visual studies explorin
 
 ## Contents
 
-- **Black Hole** — interactive black hole and accretion-disk visualization
-- **Solar System** — navigable solar-system scene
-- **Milky Way** — galaxy-scale space visualization
-- **Planet Lab** — planetary exploration scene
-- **Lab Work** — additional graphics and animation exercises
+- **Lab Work** — computer graphics and animation exercises
+- **My world** — just for fun 
 
 ## Open the Experiences
 

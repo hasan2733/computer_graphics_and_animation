@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 01</title>
+    <canvas id = "lab_01" width = "500" height = "500"></canvas>
+</head>
+<body>
+    <script>
+        var canvas = document.getElementById("lab_01");
+        var gl = canvas.getContext("webgl");
+        gl.clearColor(1.0, 0.75, 0.75, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        var vertexShaderSource = `
+            attribute vec3 acoords;
+            void main() {
+                gl_Position = vec4(acoords, 1.0);
+            }
+        `;
+
+        var fragementShaderSource = `
+            void main() {
+                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            }
+        `;
+
+        var vsh = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vsh, vertexShaderSource);
+        gl.compileShader(vsh);
+
+        var fsh = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fsh, fragementShaderSource);
+        gl.compileShader(fsh);
+
+        var prog = gl.createProgram();
+        gl.attachShader(prog, vsh);
+        gl.attachShader(prog, fsh);
+        gl.linkProgram(prog);
+        gl.useProgram(prog);
+
+        var acoords_location = gl.getAttribLocation(prog, "acoords");
+
+        var coords = new Float32Array([
+            0.0, 0.0, 0.0,
+            0.0, 0.5, 0.0,
+            0.5, 0.0, 0.0
+        ]);
+
+        var buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, coords, gl.STATIC_DRAW);
+
+        gl.enableVertexAttribArray(acoords_location);
+        gl.vertexAttribPointer(acoords_location, 3, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    </script>
+</body>
+</html>

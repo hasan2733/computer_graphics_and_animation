@@ -80,6 +80,57 @@
         min-height: 74px;
       }
 
+      .menu-toggle {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 12px;
+        color: var(--text);
+        background: rgba(255,255,255,0.04);
+        cursor: pointer;
+      }
+
+      .menu-toggle span,
+      .menu-toggle span::before,
+      .menu-toggle span::after {
+        display: block;
+        width: 18px;
+        height: 2px;
+        border-radius: 2px;
+        background: currentColor;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+
+      .menu-toggle span {
+        position: relative;
+      }
+
+      .menu-toggle span::before,
+      .menu-toggle span::after {
+        content: "";
+        position: absolute;
+        left: 0;
+      }
+
+      .menu-toggle span::before { transform: translateY(-6px); }
+      .menu-toggle span::after { transform: translateY(6px); }
+
+      .menu-toggle[aria-expanded="true"] span {
+        background: transparent;
+      }
+
+      .menu-toggle[aria-expanded="true"] span::before {
+        transform: rotate(45deg);
+      }
+
+      .menu-toggle[aria-expanded="true"] span::after {
+        transform: rotate(-45deg);
+      }
+
       .brand {
         display: flex;
         align-items: center;
@@ -112,6 +163,14 @@
 
       .nav a:hover {
         color: var(--text);
+      }
+
+      .nav a:focus-visible,
+      .btn:focus-visible,
+      .card-link:focus-visible,
+      .menu-toggle:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 4px;
       }
 
       .hero {
@@ -345,6 +404,10 @@
         gap: 24px;
       }
 
+      .cards--labs {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
       .card {
         background: rgba(14, 19, 30, 0.72);
         border: 1px solid rgba(255,255,255,0.08);
@@ -389,6 +452,27 @@
         color: #d6f0ff;
       }
 
+      .lab-card {
+        min-height: 250px;
+      }
+
+      .lab-card .card-icon {
+        color: var(--accent);
+        background: linear-gradient(135deg, rgba(255,184,107,0.18), rgba(184,140,255,0.14));
+      }
+
+      .footer-links {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 10px;
+      }
+
+      .footer-links a {
+        color: var(--primary);
+      }
+
       footer {
         padding: 18px 0 42px;
         color: var(--muted);
@@ -401,18 +485,48 @@
           padding-top: 54px;
         }
 
-        .cards {
+        .cards,
+        .cards--labs {
           grid-template-columns: 1fr;
         }
       }
 
       @media (max-width: 620px) {
         .nav {
+          position: absolute;
+          top: calc(100% + 10px);
+          left: 16px;
+          right: 16px;
           display: none;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 4px;
+          padding: 10px;
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 16px;
+          background: rgba(8, 12, 21, 0.96);
+          box-shadow: 0 18px 40px rgba(0,0,0,0.3);
+        }
+
+        .nav.is-open {
+          display: flex;
+        }
+
+        .nav a {
+          padding: 12px;
+          border-radius: 10px;
+        }
+
+        .nav a:hover {
+          background: rgba(255,255,255,0.06);
         }
 
         .topbar-inner {
           min-height: 64px;
+        }
+
+        .menu-toggle {
+          display: inline-flex;
         }
 
         .btn {
@@ -428,18 +542,20 @@
   <body>
     <header class="topbar">
       <div class="wrap topbar-inner">
-        <div class="brand">
+        <a class="brand" href="#about" aria-label="Computer Graphics home">
           <span class="brand-mark"></span>
           <span>Computer Graphics</span>
-        </div>
+        </a>
 
-        <nav class="nav" aria-label="Main navigation">
-          <a href="./my_world/blackhole.html">Black Hole</a>
-          <a href="./my_world/planet_lab.html">Planet Lab</a>
-          <a href="./my_world/solar_system.html">Solar System</a>
-          <a href="./my_world/Milkyway_and_we.html">Milky Way</a>
+        <nav class="nav" id="main-navigation" aria-label="Main navigation">
+          <a href="#about">Home</a>
+          <a href="#experiences">Experiences</a>
+          <a href="#lab-work">Lab Work</a>
           <a href="https://github.com/hasan2733/computer_graphics_and_animation" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation" aria-label="Open navigation">
+          <span></span>
+        </button>
       </div>
     </header>
 
@@ -483,7 +599,7 @@
         </div>
       </section>
 
-      <section class="section" id="projects">
+      <section class="section" id="experiences">
         <div class="section-head">
           <div>
             <div class="section-label">Featured work</div>
@@ -529,10 +645,67 @@
           </article>
         </div>
       </section>
+
+      <section class="section" id="lab-work">
+        <div class="section-head">
+          <div>
+            <div class="section-label">Coursework collection</div>
+            <h2>My lab work.</h2>
+          </div>
+          <span class="section-label">WebGL exercises</span>
+        </div>
+
+        <div class="cards cards--labs">
+          <article class="card lab-card">
+            <div class="card-icon">01</div>
+            <h3>Lab 01 · Triangle</h3>
+            <p>A first WebGL drawing exercise that introduces shaders, buffers, coordinates, and primitive rendering.</p>
+            <a class="card-link" href="./Lab_work/lab_01.html">View lab →</a>
+          </article>
+
+          <article class="card lab-card">
+            <div class="card-icon">02</div>
+            <h3>Assignment 01 · Fish</h3>
+            <p>A simple fish built from triangles to practise composing recognizable forms with WebGL geometry.</p>
+            <a class="card-link" href="./Lab_work/assignment_01.html">View assignment →</a>
+          </article>
+
+          <article class="card lab-card">
+            <div class="card-icon">03</div>
+            <h3>Lab Test 01 · House</h3>
+            <p>A house-like scene combining filled triangles and line primitives with custom canvas and shape colors.</p>
+            <a class="card-link" href="./Lab_work/Lab_test_01.html">View lab test →</a>
+          </article>
+        </div>
+      </section>
     </main>
 
     <footer>
-      © 2026 Computer Graphics and Animation
+      <div>© 2026 Computer Graphics and Animation</div>
+      <div class="footer-links">
+        <a href="#about">Back to top ↑</a>
+        <a href="https://github.com/hasan2733/computer_graphics_and_animation" target="_blank" rel="noreferrer">View source on GitHub</a>
+      </div>
     </footer>
+
+    <script>
+      const menuToggle = document.querySelector(".menu-toggle");
+      const nav = document.querySelector(".nav");
+
+      menuToggle.addEventListener("click", () => {
+        const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
+        menuToggle.setAttribute("aria-expanded", String(!isOpen));
+        menuToggle.setAttribute("aria-label", isOpen ? "Open navigation" : "Close navigation");
+        nav.classList.toggle("is-open", !isOpen);
+      });
+
+      nav.addEventListener("click", (event) => {
+        if (event.target.matches("a")) {
+          menuToggle.setAttribute("aria-expanded", "false");
+          menuToggle.setAttribute("aria-label", "Open navigation");
+          nav.classList.remove("is-open");
+        }
+      });
+    </script>
   </body>
 </html>

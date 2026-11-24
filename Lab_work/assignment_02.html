@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A running car : 2D Model</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #bef6f8;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="2d-model" width="800" height="600"></canvas>
+    <script>
+      var canvas = document.getElementById("2d-model");
+      var gl = canvas.getContext("webgl");
+
+      document.onkeydown = function (e) {
+        if (e.key === "ArrowRight") {
+          carShift += 0.01;
+          if (carShift > 1.8) {
+            carShift = -0.4;
+          }
+        } else if (e.key === "ArrowLeft") {
+          carShift -= 0.01;
+          if (carShift < -0.4) {
+            carShift = 1.8;
+          }
+        }
+        draw();
+      };
+
+      var vertexShaderSource = `
+            attribute vec3 a_position;
+            attribute vec3 a_color;
+            attribute float a_movable;
+            uniform float u_carshift;
+            varying vec3 v_color;
+            void main() {
+                vec3 newPosition = a_position;
+                if (a_movable > 0.5){
+                    newPosition.x += u_carshift;
+                }
+                gl_Position = vec4(newPosition,1);
+                v_color = a_color;
+            }
+        `;
+
+      var fragmentShaderSource = `
+            precision mediump float;
+            varying vec3 v_color;
+            void main() {
+                gl_FragColor = vec4(v_color, 1);
+            }
+        `;
+
+      var vsh = gl.createShader(gl.VERTEX_SHADER);
+      gl.shaderSource(vsh, vertexShaderSource);
+      gl.compileShader(vsh);
+
+      var fsh = gl.createShader(gl.FRAGMENT_SHADER);
+      gl.shaderSource(fsh, fragmentShaderSource);
+      gl.compileShader(fsh);
+
+      var program = gl.createProgram();
+      gl.attachShader(program, vsh);
+      gl.attachShader(program, fsh);
+      gl.linkProgram(program);
+      gl.useProgram(program);
+
+      var vertices = [];
+      var colors = [];
+      var carShift = 0.0;
+      var movable = [];
+
+      function triangle(p1, p2, p3, color, isCar = false) {
+        vertices.push(
+          p1[0],
+          p1[1],
+          p1[2],
+          p2[0],
+          p2[1],
+          p2[2],
+          p3[0],
+          p3[1],
+          p3[2],
+        );
+        for (var i = 0; i < 3; i++) {
+          colors.push(color[0], color[1], color[2]);
+          movable.push(isCar ? 1 : 0);
+        }
+      }
+
+      function rectangle(x1, y1, x2, y2, color, isCar = false) {
+        var a = [x1, y1, 0];
+        var b = [x2, y1, 0];
+        var c = [x2, y2, 0];
+        var d = [x1, y2, 0];
+        triangle(a, b, c, color, isCar);
+        triangle(a, c, d, color, isCar);
+      }
+
+      function circle(cx, cy, cz, r, segment, isCar = false) {
+        for (var i = 0; i < segment; i++) {
+          var angle1 = (i * 2 * Math.PI) / segment;
+          var angle2 = ((i + 1) * 2 * Math.PI) / segment;
+          var p1 = [cx, cy, 0];
+          var p2 = [cx + r * Math.cos(angle1), cy + r * Math.sin(angle1), 0];
+          var p3 = [cx + r * Math.cos(angle2), cy + r * Math.sin(angle2), 0];
+          if (i % 5) {
+            triangle(p1, p2, p3, [0.08, 0.08, 0.08], isCar);
+          } else {
+            triangle(p1, p2, p3, [0.9, 0.9, 0.9], isCar);
+          }
+        }
+      }
+
+      function solidCircle(cx, cy, r, segment, color) {
+        for (var i = 0; i < segment; i++) {
+          var angle1 = (i * 2 * Math.PI) / segment;
+          var angle2 = ((i + 1) * 2 * Math.PI) / segment;
+
+          var p1 = [cx, cy, 0];
+          var p2 = [cx + r * Math.cos(angle1), cy + r * Math.sin(angle1), 0];
+          var p3 = [cx + r * Math.cos(angle2), cy + r * Math.sin(angle2), 0];
+
+          triangle(p1, p2, p3, color);
+        }
+      }
+
+      function draw() {
+        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.uniform1f(u_carshift, carShift);
+        gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 3);
+      }
+
+      //sky
+      rectangle(-1.0, -0.3, 1.0, 1.0, [0.35, 0.7, 1.0]);
+
+      //grass
+      rectangle(-1.0, -1.0, 1.0, -0.3, [0.2, 0.65, 0.2]);
+
+      //road
+      rectangle(-1.0, -0.95, 1.0, -0.65, [0.25, 0.25, 0.27]);
+
+      //road lines
+      for (var i = -0.9; i < 0.95; i += 0.3) {
+        rectangle(i, -0.8, i + 0.15, -0.75, [1.0, 1.0, 1.0]);
+      }
+
+      //car body
+      rectangle(-0.8, -0.86, -0.4, -0.76, [0.9, 0.1, 0.1], true);
+
+      //car cabin
+      triangle(
+        [-0.76, -0.76, 0.0],
+        [-0.46, -0.76, 0.0],
+        [-0.52, -0.66, 0.0],
+        [0.8, 0.08, 0.08],
+        true,
+      );
+      triangle(
+        [-0.76, -0.76, 0.0],
+        [-0.52, -0.66, 0.0],
+        [-0.7, -0.66, 0.0],
+        [1.0, 0.3, 0.25],
+        true,
+      );
+
+      //car window
+      triangle(
+        [-0.72, -0.76, 0.0],
+        [-0.5, -0.76, 0.0],
+        [-0.54, -0.69, 0.0],
+        [0.6, 0.85, 1.0],
+        true,
+      );
+      triangle(
+        [-0.72, -0.76, 0.0],
+        [-0.54, -0.69, 0.0],
+        [-0.69, -0.69, 0.0],
+        [0.85, 0.95, 1.0],
+        true,
+      );
+      // Middle window separator (pillar)
+      rectangle(-0.62, -0.76, -0.6, -0.69, [0.9, 0.1, 0.1], true);
+
+      //car wheels
+      circle(-0.72, -0.88, 0.0, 0.05, 20, true);
+      circle(-0.48, -0.88, 0.0, 0.05, 20, true);
+
+      //car headlight
+      rectangle(-0.42, -0.82, -0.39, -0.79, [1.0, 1.0, 0.0], true);
+
+      //house body
+      rectangle(0.3, -0.3, 0.8, 0.2, [0.9, 0.67, 0.46]);
+
+      //house roof
+      triangle(
+        [0.23, 0.2, 0.0],
+        [0.87, 0.2, 0.0],
+        [0.55, 0.52, 0.0],
+        [0.55, 0.17, 0.08],
+      );
+
+      //roof border
+      rectangle(0.23, 0.17, 0.87, 0.21, [0.32, 0.12, 0.07]);
+
+      //left window frame
+      rectangle(0.36, -0.04, 0.48, 0.1, [0.3, 0.14, 0.08]);
+
+      //left window glass
+      rectangle(0.37, -0.03, 0.47, 0.09, [0.35, 0.78, 1.0]);
+
+      //left window separators
+      rectangle(0.415, -0.03, 0.425, 0.09, [0.3, 0.14, 0.08]);
+      rectangle(0.37, 0.025, 0.47, 0.035, [0.3, 0.14, 0.08]);
+
+      //right window frame
+      rectangle(0.64, -0.04, 0.76, 0.1, [0.3, 0.14, 0.08]);
+
+      //right window glass
+      rectangle(0.65, -0.03, 0.75, 0.09, [0.35, 0.78, 1.0]);
+
+      //right window separators
+      rectangle(0.695, -0.03, 0.705, 0.09, [0.3, 0.14, 0.08]);
+      rectangle(0.65, 0.025, 0.75, 0.035, [0.3, 0.14, 0.08]);
+
+      //door frame
+      rectangle(0.49, -0.3, 0.63, -0.02, [0.3, 0.14, 0.08]);
+
+      //door
+      rectangle(0.5, -0.3, 0.62, -0.03, [0.48, 0.23, 0.12]);
+
+      //door knob
+      solidCircle(0.6, -0.17, 0.012, 20, [1.0, 0.85, 0.1]);
+
+      //house foundation
+      rectangle(0.28, -0.32, 0.82, -0.29, [0.48, 0.4, 0.32]);
+
+      //sun
+      solidCircle(-0.8, 0.8, 0.25, 30, [1.0, 0.9, 0.1]);
+
+      //clouds
+      solidCircle(-0.5, 0.7, 0.1, 20, [1.0, 1.0, 1.0]);
+      solidCircle(-0.4, 0.7, 0.1, 20, [1.0, 1.0, 1.0]);
+      solidCircle(-0.45, 0.75, 0.1, 20, [1.0, 1.0, 1.0]);
+      solidCircle(0.5, 0.6, 0.1, 20, [1.0, 1.0, 1.0]);
+      solidCircle(0.6, 0.6, 0.1, 20, [1.0, 1.0, 1.0]);
+      solidCircle(0.55, 0.65, 0.1, 20, [1.0, 1.0, 1.0]);
+
+      // Bird 1
+      triangle(
+        [-0.8, 0.65, 0],
+        [-0.7, 0.55, 0],
+        [-0.78, 0.6, 0],
+        [0.15, 0.15, 0.15],
+      );
+      triangle(
+        [-0.7, 0.55, 0],
+        [-0.6, 0.65, 0],
+        [-0.72, 0.6, 0],
+        [0.15, 0.15, 0.15],
+      );
+
+      // Bird 2
+      triangle(
+        [-0.2, 0.8, 0],
+        [-0.1, 0.7, 0],
+        [-0.18, 0.75, 0],
+        [0.15, 0.15, 0.15],
+      );
+      triangle(
+        [-0.1, 0.7, 0],
+        [0.0, 0.8, 0],
+        [-0.12, 0.75, 0],
+        [0.15, 0.15, 0.15],
+      );
+
+      //tree
+      rectangle(-0.88, -0.3, -0.92, 0.1, [0.55, 0.27, 0.07]);
+      triangle(
+        [-1.2, 0.0, 0.0],
+        [-0.7, 0.0, 0.0],
+        [-0.89, 0.2, 0.0],
+        [0.13, 0.55, 0.13],
+      );
+      triangle(
+        [-1.2, 0.18, 0.0],
+        [-0.7, 0.18, 0.0],
+        [-0.89, 0.32, 0.0],
+        [0.13, 0.55, 0.13],
+      );
+      triangle(
+        [-0.99, 0.3, 0.0],
+        [-0.8, 0.3, 0.0],
+        [-0.89, 0.4, 0.0],
+        [0.13, 0.55, 0.13],
+      );
+
+      var a_coord_position = gl.getAttribLocation(program, "a_position");
+
+      var buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array(vertices),
+        gl.STATIC_DRAW,
+      );
+
+      gl.vertexAttribPointer(a_coord_position, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_coord_position);
+
+      var a_coord_color = gl.getAttribLocation(program, "a_color");
+
+      var colorBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+      gl.vertexAttribPointer(a_coord_color, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_coord_color);
+
+      var a_movable_position = gl.getAttribLocation(program, "a_movable");
+      var movableBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, movableBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(movable), gl.STATIC_DRAW);
+      gl.vertexAttribPointer(a_movable_position, 1, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_movable_position);
+
+      var u_carshift = gl.getUniformLocation(program, "u_carshift");
+
+      draw();
+    </script>
+  </body>
+</html>

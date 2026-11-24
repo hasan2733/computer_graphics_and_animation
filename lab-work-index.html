@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab Documentation | Computer Graphics & Animation</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90' fill='%237bdcff' text-anchor='middle' x='50'%3EA%3C/text%3E%3C/svg%3E" type="image/svg+xml">
+    <style>
+      :root { --bg: #060b14; --bg-2: #0d1320; --panel: rgba(15,20,32,.72); --panel-border: rgba(166,196,255,.18); --text: #edf3ff; --muted: #a6b3c9; --primary: #7bdcff; --primary-2: #b88cff; --accent: #ffb86b; }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { margin: 0; min-height: 100vh; font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text); background: radial-gradient(circle at top, rgba(123,220,255,.18), transparent 30%), radial-gradient(circle at bottom right, rgba(184,140,255,.14), transparent 25%), linear-gradient(180deg, var(--bg), var(--bg-2)); overflow-x: hidden; }
+      a { color: inherit; text-decoration: none; }
+      .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+      .topbar { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); background: rgba(5,9,16,.45); border-bottom: 1px solid rgba(255,255,255,.06); }
+      .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 74px; }
+      .menu-toggle { display: none; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; color: var(--text); background: rgba(255,255,255,.04); cursor: pointer; }
+      .menu-toggle span, .menu-toggle span::before, .menu-toggle span::after { display: block; width: 18px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .2s ease, opacity .2s ease; }
+      .menu-toggle span { position: relative; } .menu-toggle span::before, .menu-toggle span::after { content: ""; position: absolute; left: 0; } .menu-toggle span::before { transform: translateY(-6px); } .menu-toggle span::after { transform: translateY(6px); }
+      .menu-toggle[aria-expanded="true"] span { background: transparent; } .menu-toggle[aria-expanded="true"] span::before { transform: rotate(45deg); } .menu-toggle[aria-expanded="true"] span::after { transform: rotate(-45deg); }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: .8rem; }
+      .brand-mark { width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-2)); box-shadow: 0 0 18px rgba(123,220,255,.9); }
+      .nav { display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: .95rem; }
+      .nav a { transition: color .2s ease; } .nav a:hover { color: var(--text); }
+      .nav a:focus-visible, .btn:focus-visible, .card-link:focus-visible, .menu-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+      .section { padding: 60px 0 80px; }
+      .section h2 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.04em; margin-bottom: 24px; }
+      .section-label { color: var(--muted); font-size: .9rem; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+      .lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+      .lab-card { background: rgba(14,19,30,.72); border: 1px solid var(--panel-border); border-radius: 22px; padding: 24px; min-height: 280px; box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+      .lab-card h3 { margin: 0 0 12px; font-size: 1.3rem; color: var(--primary); }
+      .lab-card p { color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
+      .lab-links { display: flex; flex-wrap: wrap; gap: 12px; }
+      .lab-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: .85rem; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.02); color: var(--primary); transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+      .lab-link:hover { transform: translateY(-2px); border-color: var(--primary); background: rgba(123,220,255,.15); }
+      .lab-link.source { color: var(--accent); }
+      .lab-link.source:hover { border-color: var(--accent); background: rgba(255,184,107,.15); }
+      .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 600; margin-top: 30px; }
+      .back-link:hover { color: #d6f0ff; }
+      footer { padding: 18px 0 42px; color: var(--muted); text-align: center; }
+      .footer-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
+      .footer-links a { color: var(--primary); }
+      @media (max-width: 620px) { .nav { position: absolute; top: calc(100% + 10px); left: 16px; right: 16px; display: none; flex-direction: column; align-items: stretch; gap: 4px; padding: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 16px; background: rgba(8,12,21,.96); box-shadow: 0 18px 40px rgba(0,0,0,.3); } .nav.is-open { display: flex; } .nav a { padding: 12px; border-radius: 10px; } .nav a:hover { background: rgba(255,255,255,.06); } .topbar-inner { min-height: 64px; } .menu-toggle { display: inline-flex; } }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap topbar-inner">
+        <a class="brand" href="index.html" aria-label="Computer Graphics home"><span class="brand-mark"></span><span>Computer Graphics</span></a>
+        <nav class="nav" id="main-navigation" aria-label="Main navigation">
+          <a href="index.html">Home</a>
+          <a href="index.html#experiences">Experiences</a>
+          <a href="index.html#lab-work">Lab Work</a>
+          <a href="about-the-author.html">About the Author</a>
+          <a href="lab-work-index.html" aria-current="page">Lab Documentation</a>
+          <a href="https://github.com/hasan2733/computer_graphics_and_animation" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation" aria-label="Open navigation"><span></span></button>
+      </div>
+    </header>
+    <main class="wrap">
+      <section class="section">
+        <p class="section-label">Coursework collection</p>
+        <h2>Lab Work Documentation</h2>
+        <p style="color:var(--muted);max-width:720px;margin-bottom:32px;">Each lab below includes a brief description of the concepts explored, a link to the live result, and a link to view the source code.</p>
+
+        <div class="lab-grid">
+          <article class="lab-card">
+            <h3>Lab 01 · Moving Triangle</h3>
+            <p>First WebGL exercise introducing shaders, vertex buffers, and uniform variables. A single triangle is drawn and can be moved horizontally by clicking the canvas; it wraps around the screen edges.</p>
+            <div class="lab-links">
+              <a class="lab-link" href="Lab_work/lab_01.html" target="_blank" rel="noopener">View Result →</a>
+              <a class="lab-link source" href="Lab_work/lab_01.html" target="_blank" rel="noopener">View Source →</a>
+            </div>
+          </article>
+
+          <article class="lab-card">
+            <h3>Lab 02 · Moving Triangle (Variation)</h3>
+            <p>Another early WebGL lab demonstrating triangle rendering with click interaction to translate the triangle across the canvas, showcasing uniform updates and basic animation loop.</p>
+            <div class="lab-links">
+              <a class="lab-link" href="Lab_work/lab_02.html" target="_blank" rel="noopener">View Result →</a>
+              <a class="lab-link source" href="Lab_work/lab_02.html" target="_blank" rel="noopener">View Source →</a>
+            </div>
+          </article>
+
+          <article class="lab-card">
+            <h3>Assignment 01 · Fish Shape</h3>
+            <p>Compose a recognizable fish using multiple triangles. Practices combining primitives to form complex geometry in WebGL, using a single color shader.</p>
+            <div class="lab-links">
+              <a class="lab-link" href="Lab_work/assignment_01.html" target="_blank" rel="noopener">View Result →</a>
+              <a class="lab-link source" href="Lab_work/assignment_01.html" target="_blank" rel="noopener">View Source →</a>
+            </div>
+          </article>
+
+          <article class="lab-card">
+            <h3>Assignment 02 · Running Car (2D)</h3>
+            <p>An animated 2D car built from triangles, rectangles, and circles. Keyboard arrows move the car left/right with wrapping; demonstrates attribute-based vertex animation and per-vertex colors.</p>
+            <div class="lab-links">
+              <a class="lab-link" href="Lab_work/assignment_02.html" target="_blank" rel="noopener">View Result →</a>
+              <a class="lab-link source" href="Lab_work/assignment_02.html" target="_blank" rel="noopener">View Source →</a>
+            </div>
+          </article>
+
+          <article class="lab-card">
+            <h3>Lab Test 01 · House</h3>
+            <p>Draw a house-like structure using filled rectangles and an outlined triangle roof. Canvas background is set to a pink tone; demonstrates use of TRIANGLES and LINE_LOOP primitives.</p>
+            <div class="lab-links">
+              <a class="lab-link" href="Lab_work/Lab_test_01.html" target="_blank" rel="noopener">View Result →</a>
+              <a class="lab-link source" href="Lab_work/Lab_test_01.html" target="_blank" rel="noopener">View Source →</a>
+            </div>
+          </article>
+        </div>
+
+        <a class="back-link" href="index.html">← Back to Home</a>
+      </section>
+    </main>
+
+    <footer>
+      <div>© 2026 Computer Graphics and Animation</div>
+      <div class="footer-links">
+        <a href="https://github.com/hasan2733/computer_graphics_and_animation" target="_blank" rel="noreferrer">View source on GitHub</a>
+        <a href="https://abidhasan27.me" target="_blank" rel="noreferrer">My Portfolio</a>
+        <a href="about-the-author.html">About the Author</a>
+      </div>
+    </footer>
+
+    <script>
+      const menuToggle = document.querySelector(".menu-toggle");
+      const nav = document.querySelector(".nav");
+
+      menuToggle.addEventListener("click", () => {
+        const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
+        menuToggle.setAttribute("aria-expanded", String(!isOpen));
+        menuToggle.setAttribute("aria-label", isOpen ? "Open navigation" : "Close navigation");
+        nav.classList.toggle("is-open", !isOpen);
+      });
+
+      nav.addEventListener("click", (event) => {
+        if (event.target.matches("a")) {
+          menuToggle.setAttribute("aria-expanded", "false");
+          menuToggle.setAttribute("aria-label", "Open navigation");
+          nav.classList.remove("is-open");
+        }
+      });
+    </script>
+  </body>
+</html>

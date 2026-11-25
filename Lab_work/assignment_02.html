@@ -1,341 +1,128 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>A running car : 2D Model</title>
+    <title>Assignment 02 · Running Car | Computer Graphics &amp; Animation</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90' fill='%237bdcff' text-anchor='middle' x='50'%3EA%3C/text%3E%3C/svg%3E" type="image/svg+xml">
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #bef6f8;
+      :root { --bg:#060b14; --bg-2:#0d1320; --text:#edf3ff; --muted:#a6b3c9; --primary:#7bdcff; --primary-2:#b88cff; --panel-border:rgba(166,196,255,0.18); }
+      * { box-sizing:border-box; }
+      html { scroll-behavior:smooth; }
+      body { margin:0; min-height:100vh; display:flex; flex-direction:column; font-family:Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text); background:radial-gradient(circle at top,rgba(123,220,255,0.14),transparent 30%),linear-gradient(180deg,var(--bg),var(--bg-2)); overflow-x:hidden; }
+      body::before { content:""; position:fixed; inset:0; pointer-events:none; background-image:radial-gradient(2px 2px at 20% 30%,rgba(255,255,255,0.7),transparent),radial-gradient(1.5px 1.5px at 70% 55%,rgba(255,255,255,0.6),transparent); background-repeat:repeat; background-size:420px 420px; opacity:0.6; }
+      a { color:inherit; text-decoration:none; }
+      .wrap { width:min(1180px,calc(100% - 32px)); margin:0 auto; }
+      .topbar { position:sticky; top:0; z-index:10; backdrop-filter:blur(12px); background:rgba(5,9,16,0.45); border-bottom:1px solid rgba(255,255,255,0.06); }
+      .topbar-inner { display:flex; align-items:center; justify-content:space-between; gap:18px; min-height:64px; }
+      .brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; font-size:0.8rem; }
+      .brand-mark { width:12px; height:12px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow:0 0 18px rgba(123,220,255,0.9); flex-shrink:0; }
+      .nav { display:flex; align-items:center; gap:20px; color:var(--muted); font-size:0.95rem; }
+      .nav a { transition:color 0.2s; } .nav a:hover { color:var(--text); } .nav a[aria-current="page"] { color:var(--primary); }
+      .nav a:focus-visible,.menu-toggle:focus-visible { outline:2px solid var(--primary); outline-offset:4px; }
+      .menu-toggle { display:none; align-items:center; justify-content:center; width:42px; height:42px; padding:0; border:1px solid rgba(255,255,255,0.12); border-radius:12px; color:var(--text); background:rgba(255,255,255,0.04); cursor:pointer; }
+      .menu-toggle span,.menu-toggle span::before,.menu-toggle span::after { display:block; width:18px; height:2px; border-radius:2px; background:currentColor; transition:transform 0.2s ease; }
+      .menu-toggle span { position:relative; } .menu-toggle span::before,.menu-toggle span::after { content:""; position:absolute; left:0; }
+      .menu-toggle span::before { transform:translateY(-6px); } .menu-toggle span::after { transform:translateY(6px); }
+      .menu-toggle[aria-expanded="true"] span { background:transparent; } .menu-toggle[aria-expanded="true"] span::before { transform:rotate(45deg); } .menu-toggle[aria-expanded="true"] span::after { transform:rotate(-45deg); }
+      .page-main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 16px 32px; gap:16px; }
+      .page-info { text-align:center; max-width:600px; }
+      .page-info .eyebrow { display:inline-block; padding:6px 12px; border-radius:999px; font-size:0.74rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--primary); background:rgba(123,220,255,0.1); border:1px solid rgba(123,220,255,0.2); margin-bottom:14px; }
+      .page-info h1 { margin:0 0 10px; font-size:clamp(1.4rem,3vw,2rem); letter-spacing:-0.04em; }
+      .page-info p { margin:0; color:var(--muted); font-size:0.95rem; line-height:1.7; }
+      canvas { border-radius:16px; border:1px solid var(--panel-border); box-shadow:0 20px 60px rgba(0,0,0,0.5); display:block; max-width:calc(100vw - 32px); max-height:calc(100vh - 260px); }
+      footer { padding:18px 0 32px; color:var(--muted); text-align:center; font-size:0.9rem; border-top:1px solid rgba(255,255,255,0.06); }
+      .footer-links { display:flex; justify-content:center; flex-wrap:wrap; gap:16px; margin-top:10px; }
+      .footer-links a { color:var(--primary); transition:color 0.2s; } .footer-links a:hover { color:#d6f0ff; }
+      @media (max-width:620px) {
+        .nav { position:absolute; top:calc(100% + 10px); left:16px; right:16px; display:none; flex-direction:column; align-items:stretch; gap:4px; padding:10px; border:1px solid rgba(255,255,255,0.1); border-radius:16px; background:rgba(8,12,21,0.96); box-shadow:0 18px 40px rgba(0,0,0,0.3); z-index:20; }
+        .nav.is-open { display:flex; } .nav a { padding:12px; border-radius:10px; } .nav a:hover { background:rgba(255,255,255,0.06); }
+        .topbar-inner { position:relative; } .menu-toggle { display:inline-flex; }
       }
     </style>
   </head>
   <body>
-    <canvas id="2d-model" width="800" height="600"></canvas>
+    <header class="topbar">
+      <div class="wrap topbar-inner">
+        <a class="brand" href="../index.html" aria-label="Computer Graphics home">
+          <span class="brand-mark"></span><span>Computer Graphics</span>
+        </a>
+        <nav class="nav" id="main-navigation" aria-label="Main navigation">
+          <a href="../index.html">Home</a>
+          <a href="../index.html#experiences">Experiences</a>
+          <a href="../index.html#lab-work">Lab Work</a>
+          <a href="../about-the-author.html">About the Author</a>
+          <a href="../lab-work-index.html" aria-current="page">Lab Documentation</a>
+          <a href="https://github.com/hasan2733/computer_graphics_and_animation" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation" aria-label="Open navigation"><span></span></button>
+      </div>
+    </header>
+
+    <main class="page-main">
+      <div class="page-info">
+        <span class="eyebrow">Assignment 02 · WebGL</span>
+        <h1>Running Car (2D Model)</h1>
+        <p>Use the <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:1px 6px;">←</kbd> <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:1px 6px;">→</kbd> arrow keys to drive the car. It wraps around the edges of the scene.</p>
+      </div>
+      <canvas id="2d-model" width="800" height="600"></canvas>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <div>© 2026 Computer Graphics and Animation</div>
+        <div class="footer-links">
+          <a href="../index.html">← Back to Home</a>
+          <a href="../lab-work-index.html">Lab Documentation</a>
+          <a href="https://github.com/hasan2733/computer_graphics_and_animation" target="_blank" rel="noreferrer">View on GitHub</a>
+          <a href="../about-the-author.html">About the Author</a>
+        </div>
+      </div>
+    </footer>
+
     <script>
+      const menuToggle = document.querySelector(".menu-toggle"), nav = document.querySelector(".nav");
+      menuToggle.addEventListener("click",()=>{ const o=menuToggle.getAttribute("aria-expanded")==="true"; menuToggle.setAttribute("aria-expanded",String(!o)); menuToggle.setAttribute("aria-label",o?"Open navigation":"Close navigation"); nav.classList.toggle("is-open",!o); });
+      nav.addEventListener("click",(e)=>{ if(e.target.matches("a")){ menuToggle.setAttribute("aria-expanded","false"); menuToggle.setAttribute("aria-label","Open navigation"); nav.classList.remove("is-open"); } });
+
       var canvas = document.getElementById("2d-model");
       var gl = canvas.getContext("webgl");
-
-      document.onkeydown = function (e) {
-        if (e.key === "ArrowRight") {
-          carShift += 0.01;
-          if (carShift > 1.8) {
-            carShift = -0.4;
-          }
-        } else if (e.key === "ArrowLeft") {
-          carShift -= 0.01;
-          if (carShift < -0.4) {
-            carShift = 1.8;
-          }
-        }
-        draw();
-      };
-
-      var vertexShaderSource = `
-            attribute vec3 a_position;
-            attribute vec3 a_color;
-            attribute float a_movable;
-            uniform float u_carshift;
-            varying vec3 v_color;
-            void main() {
-                vec3 newPosition = a_position;
-                if (a_movable > 0.5){
-                    newPosition.x += u_carshift;
-                }
-                gl_Position = vec4(newPosition,1);
-                v_color = a_color;
-            }
-        `;
-
-      var fragmentShaderSource = `
-            precision mediump float;
-            varying vec3 v_color;
-            void main() {
-                gl_FragColor = vec4(v_color, 1);
-            }
-        `;
-
-      var vsh = gl.createShader(gl.VERTEX_SHADER);
-      gl.shaderSource(vsh, vertexShaderSource);
-      gl.compileShader(vsh);
-
-      var fsh = gl.createShader(gl.FRAGMENT_SHADER);
-      gl.shaderSource(fsh, fragmentShaderSource);
-      gl.compileShader(fsh);
-
-      var program = gl.createProgram();
-      gl.attachShader(program, vsh);
-      gl.attachShader(program, fsh);
-      gl.linkProgram(program);
-      gl.useProgram(program);
-
-      var vertices = [];
-      var colors = [];
-      var carShift = 0.0;
-      var movable = [];
-
-      function triangle(p1, p2, p3, color, isCar = false) {
-        vertices.push(
-          p1[0],
-          p1[1],
-          p1[2],
-          p2[0],
-          p2[1],
-          p2[2],
-          p3[0],
-          p3[1],
-          p3[2],
-        );
-        for (var i = 0; i < 3; i++) {
-          colors.push(color[0], color[1], color[2]);
-          movable.push(isCar ? 1 : 0);
-        }
-      }
-
-      function rectangle(x1, y1, x2, y2, color, isCar = false) {
-        var a = [x1, y1, 0];
-        var b = [x2, y1, 0];
-        var c = [x2, y2, 0];
-        var d = [x1, y2, 0];
-        triangle(a, b, c, color, isCar);
-        triangle(a, c, d, color, isCar);
-      }
-
-      function circle(cx, cy, cz, r, segment, isCar = false) {
-        for (var i = 0; i < segment; i++) {
-          var angle1 = (i * 2 * Math.PI) / segment;
-          var angle2 = ((i + 1) * 2 * Math.PI) / segment;
-          var p1 = [cx, cy, 0];
-          var p2 = [cx + r * Math.cos(angle1), cy + r * Math.sin(angle1), 0];
-          var p3 = [cx + r * Math.cos(angle2), cy + r * Math.sin(angle2), 0];
-          if (i % 5) {
-            triangle(p1, p2, p3, [0.08, 0.08, 0.08], isCar);
-          } else {
-            triangle(p1, p2, p3, [0.9, 0.9, 0.9], isCar);
-          }
-        }
-      }
-
-      function solidCircle(cx, cy, r, segment, color) {
-        for (var i = 0; i < segment; i++) {
-          var angle1 = (i * 2 * Math.PI) / segment;
-          var angle2 = ((i + 1) * 2 * Math.PI) / segment;
-
-          var p1 = [cx, cy, 0];
-          var p2 = [cx + r * Math.cos(angle1), cy + r * Math.sin(angle1), 0];
-          var p3 = [cx + r * Math.cos(angle2), cy + r * Math.sin(angle2), 0];
-
-          triangle(p1, p2, p3, color);
-        }
-      }
-
-      function draw() {
-        gl.clearColor(1.0, 1.0, 1.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.uniform1f(u_carshift, carShift);
-        gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 3);
-      }
-
-      //sky
-      rectangle(-1.0, -0.3, 1.0, 1.0, [0.35, 0.7, 1.0]);
-
-      //grass
-      rectangle(-1.0, -1.0, 1.0, -0.3, [0.2, 0.65, 0.2]);
-
-      //road
-      rectangle(-1.0, -0.95, 1.0, -0.65, [0.25, 0.25, 0.27]);
-
-      //road lines
-      for (var i = -0.9; i < 0.95; i += 0.3) {
-        rectangle(i, -0.8, i + 0.15, -0.75, [1.0, 1.0, 1.0]);
-      }
-
-      //car body
-      rectangle(-0.8, -0.86, -0.4, -0.76, [0.9, 0.1, 0.1], true);
-
-      //car cabin
-      triangle(
-        [-0.76, -0.76, 0.0],
-        [-0.46, -0.76, 0.0],
-        [-0.52, -0.66, 0.0],
-        [0.8, 0.08, 0.08],
-        true,
-      );
-      triangle(
-        [-0.76, -0.76, 0.0],
-        [-0.52, -0.66, 0.0],
-        [-0.7, -0.66, 0.0],
-        [1.0, 0.3, 0.25],
-        true,
-      );
-
-      //car window
-      triangle(
-        [-0.72, -0.76, 0.0],
-        [-0.5, -0.76, 0.0],
-        [-0.54, -0.69, 0.0],
-        [0.6, 0.85, 1.0],
-        true,
-      );
-      triangle(
-        [-0.72, -0.76, 0.0],
-        [-0.54, -0.69, 0.0],
-        [-0.69, -0.69, 0.0],
-        [0.85, 0.95, 1.0],
-        true,
-      );
-      // Middle window separator (pillar)
-      rectangle(-0.62, -0.76, -0.6, -0.69, [0.9, 0.1, 0.1], true);
-
-      //car wheels
-      circle(-0.72, -0.88, 0.0, 0.05, 20, true);
-      circle(-0.48, -0.88, 0.0, 0.05, 20, true);
-
-      //car headlight
-      rectangle(-0.42, -0.82, -0.39, -0.79, [1.0, 1.0, 0.0], true);
-
-      //house body
-      rectangle(0.3, -0.3, 0.8, 0.2, [0.9, 0.67, 0.46]);
-
-      //house roof
-      triangle(
-        [0.23, 0.2, 0.0],
-        [0.87, 0.2, 0.0],
-        [0.55, 0.52, 0.0],
-        [0.55, 0.17, 0.08],
-      );
-
-      //roof border
-      rectangle(0.23, 0.17, 0.87, 0.21, [0.32, 0.12, 0.07]);
-
-      //left window frame
-      rectangle(0.36, -0.04, 0.48, 0.1, [0.3, 0.14, 0.08]);
-
-      //left window glass
-      rectangle(0.37, -0.03, 0.47, 0.09, [0.35, 0.78, 1.0]);
-
-      //left window separators
-      rectangle(0.415, -0.03, 0.425, 0.09, [0.3, 0.14, 0.08]);
-      rectangle(0.37, 0.025, 0.47, 0.035, [0.3, 0.14, 0.08]);
-
-      //right window frame
-      rectangle(0.64, -0.04, 0.76, 0.1, [0.3, 0.14, 0.08]);
-
-      //right window glass
-      rectangle(0.65, -0.03, 0.75, 0.09, [0.35, 0.78, 1.0]);
-
-      //right window separators
-      rectangle(0.695, -0.03, 0.705, 0.09, [0.3, 0.14, 0.08]);
-      rectangle(0.65, 0.025, 0.75, 0.035, [0.3, 0.14, 0.08]);
-
-      //door frame
-      rectangle(0.49, -0.3, 0.63, -0.02, [0.3, 0.14, 0.08]);
-
-      //door
-      rectangle(0.5, -0.3, 0.62, -0.03, [0.48, 0.23, 0.12]);
-
-      //door knob
-      solidCircle(0.6, -0.17, 0.012, 20, [1.0, 0.85, 0.1]);
-
-      //house foundation
-      rectangle(0.28, -0.32, 0.82, -0.29, [0.48, 0.4, 0.32]);
-
-      //sun
-      solidCircle(-0.8, 0.8, 0.25, 30, [1.0, 0.9, 0.1]);
-
-      //clouds
-      solidCircle(-0.5, 0.7, 0.1, 20, [1.0, 1.0, 1.0]);
-      solidCircle(-0.4, 0.7, 0.1, 20, [1.0, 1.0, 1.0]);
-      solidCircle(-0.45, 0.75, 0.1, 20, [1.0, 1.0, 1.0]);
-      solidCircle(0.5, 0.6, 0.1, 20, [1.0, 1.0, 1.0]);
-      solidCircle(0.6, 0.6, 0.1, 20, [1.0, 1.0, 1.0]);
-      solidCircle(0.55, 0.65, 0.1, 20, [1.0, 1.0, 1.0]);
-
-      // Bird 1
-      triangle(
-        [-0.8, 0.65, 0],
-        [-0.7, 0.55, 0],
-        [-0.78, 0.6, 0],
-        [0.15, 0.15, 0.15],
-      );
-      triangle(
-        [-0.7, 0.55, 0],
-        [-0.6, 0.65, 0],
-        [-0.72, 0.6, 0],
-        [0.15, 0.15, 0.15],
-      );
-
-      // Bird 2
-      triangle(
-        [-0.2, 0.8, 0],
-        [-0.1, 0.7, 0],
-        [-0.18, 0.75, 0],
-        [0.15, 0.15, 0.15],
-      );
-      triangle(
-        [-0.1, 0.7, 0],
-        [0.0, 0.8, 0],
-        [-0.12, 0.75, 0],
-        [0.15, 0.15, 0.15],
-      );
-
-      //tree
-      rectangle(-0.88, -0.3, -0.92, 0.1, [0.55, 0.27, 0.07]);
-      triangle(
-        [-1.2, 0.0, 0.0],
-        [-0.7, 0.0, 0.0],
-        [-0.89, 0.2, 0.0],
-        [0.13, 0.55, 0.13],
-      );
-      triangle(
-        [-1.2, 0.18, 0.0],
-        [-0.7, 0.18, 0.0],
-        [-0.89, 0.32, 0.0],
-        [0.13, 0.55, 0.13],
-      );
-      triangle(
-        [-0.99, 0.3, 0.0],
-        [-0.8, 0.3, 0.0],
-        [-0.89, 0.4, 0.0],
-        [0.13, 0.55, 0.13],
-      );
-
-      var a_coord_position = gl.getAttribLocation(program, "a_position");
-
-      var buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array(vertices),
-        gl.STATIC_DRAW,
-      );
-
-      gl.vertexAttribPointer(a_coord_position, 3, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(a_coord_position);
-
-      var a_coord_color = gl.getAttribLocation(program, "a_color");
-
-      var colorBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-      gl.vertexAttribPointer(a_coord_color, 3, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(a_coord_color);
-
-      var a_movable_position = gl.getAttribLocation(program, "a_movable");
-      var movableBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, movableBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(movable), gl.STATIC_DRAW);
-      gl.vertexAttribPointer(a_movable_position, 1, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(a_movable_position);
-
-      var u_carshift = gl.getUniformLocation(program, "u_carshift");
-
+      document.onkeydown = function(e){ if(e.key==="ArrowRight"){ carShift+=0.01; if(carShift>1.8) carShift=-0.4; } else if(e.key==="ArrowLeft"){ carShift-=0.01; if(carShift<-0.4) carShift=1.8; } draw(); };
+      var vertexShaderSource=`attribute vec3 a_position;attribute vec3 a_color;attribute float a_movable;uniform float u_carshift;varying vec3 v_color;void main(){vec3 p=a_position;if(a_movable>0.5)p.x+=u_carshift;gl_Position=vec4(p,1);v_color=a_color;}`;
+      var fragmentShaderSource=`precision mediump float;varying vec3 v_color;void main(){gl_FragColor=vec4(v_color,1);}`;
+      var vsh=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vsh,vertexShaderSource);gl.compileShader(vsh);
+      var fsh=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fsh,fragmentShaderSource);gl.compileShader(fsh);
+      var program=gl.createProgram();gl.attachShader(program,vsh);gl.attachShader(program,fsh);gl.linkProgram(program);gl.useProgram(program);
+      var vertices=[],colors=[],carShift=0.0,movable=[];
+      function triangle(p1,p2,p3,color,isCar){isCar=isCar||false;vertices.push(p1[0],p1[1],p1[2],p2[0],p2[1],p2[2],p3[0],p3[1],p3[2]);for(var i=0;i<3;i++){colors.push(color[0],color[1],color[2]);movable.push(isCar?1:0);}}
+      function rectangle(x1,y1,x2,y2,color,isCar){isCar=isCar||false;var a=[x1,y1,0],b=[x2,y1,0],c=[x2,y2,0],d=[x1,y2,0];triangle(a,b,c,color,isCar);triangle(a,c,d,color,isCar);}
+      function circle(cx,cy,cz,r,segment,isCar){isCar=isCar||false;for(var i=0;i<segment;i++){var a1=(i*2*Math.PI)/segment,a2=((i+1)*2*Math.PI)/segment;triangle([cx,cy,0],[cx+r*Math.cos(a1),cy+r*Math.sin(a1),0],[cx+r*Math.cos(a2),cy+r*Math.sin(a2),0],i%5?[0.08,0.08,0.08]:[0.9,0.9,0.9],isCar);}}
+      function solidCircle(cx,cy,r,segment,color){for(var i=0;i<segment;i++){var a1=(i*2*Math.PI)/segment,a2=((i+1)*2*Math.PI)/segment;triangle([cx,cy,0],[cx+r*Math.cos(a1),cy+r*Math.sin(a1),0],[cx+r*Math.cos(a2),cy+r*Math.sin(a2),0],color);}}
+      function draw(){gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.uniform1f(u_carshift,carShift);gl.drawArrays(gl.TRIANGLES,0,vertices.length/3);}
+      rectangle(-1,-0.3,1,1,[0.35,0.7,1]);rectangle(-1,-1,1,-0.3,[0.2,0.65,0.2]);
+      rectangle(-1,-0.95,1,-0.65,[0.25,0.25,0.27]);
+      for(var i=-0.9;i<0.95;i+=0.3)rectangle(i,-0.8,i+0.15,-0.75,[1,1,1]);
+      rectangle(-0.8,-0.86,-0.4,-0.76,[0.9,0.1,0.1],true);
+      triangle([-0.76,-0.76,0],[-0.46,-0.76,0],[-0.52,-0.66,0],[0.8,0.08,0.08],true);triangle([-0.76,-0.76,0],[-0.52,-0.66,0],[-0.7,-0.66,0],[1,0.3,0.25],true);
+      triangle([-0.72,-0.76,0],[-0.5,-0.76,0],[-0.54,-0.69,0],[0.6,0.85,1],true);triangle([-0.72,-0.76,0],[-0.54,-0.69,0],[-0.69,-0.69,0],[0.85,0.95,1],true);
+      rectangle(-0.62,-0.76,-0.6,-0.69,[0.9,0.1,0.1],true);
+      circle(-0.72,-0.88,0,0.05,20,true);circle(-0.48,-0.88,0,0.05,20,true);
+      rectangle(-0.42,-0.82,-0.39,-0.79,[1,1,0],true);
+      rectangle(0.3,-0.3,0.8,0.2,[0.9,0.67,0.46]);triangle([0.23,0.2,0],[0.87,0.2,0],[0.55,0.52,0],[0.55,0.17,0.08]);
+      rectangle(0.23,0.17,0.87,0.21,[0.32,0.12,0.07]);
+      rectangle(0.36,-0.04,0.48,0.1,[0.3,0.14,0.08]);rectangle(0.37,-0.03,0.47,0.09,[0.35,0.78,1]);rectangle(0.415,-0.03,0.425,0.09,[0.3,0.14,0.08]);rectangle(0.37,0.025,0.47,0.035,[0.3,0.14,0.08]);
+      rectangle(0.64,-0.04,0.76,0.1,[0.3,0.14,0.08]);rectangle(0.65,-0.03,0.75,0.09,[0.35,0.78,1]);rectangle(0.695,-0.03,0.705,0.09,[0.3,0.14,0.08]);rectangle(0.65,0.025,0.75,0.035,[0.3,0.14,0.08]);
+      rectangle(0.49,-0.3,0.63,-0.02,[0.3,0.14,0.08]);rectangle(0.5,-0.3,0.62,-0.03,[0.48,0.23,0.12]);solidCircle(0.6,-0.17,0.012,20,[1,0.85,0.1]);rectangle(0.28,-0.32,0.82,-0.29,[0.48,0.4,0.32]);
+      solidCircle(-0.8,0.8,0.25,30,[1,0.9,0.1]);
+      solidCircle(-0.5,0.7,0.1,20,[1,1,1]);solidCircle(-0.4,0.7,0.1,20,[1,1,1]);solidCircle(-0.45,0.75,0.1,20,[1,1,1]);
+      solidCircle(0.5,0.6,0.1,20,[1,1,1]);solidCircle(0.6,0.6,0.1,20,[1,1,1]);solidCircle(0.55,0.65,0.1,20,[1,1,1]);
+      triangle([-0.8,0.65,0],[-0.7,0.55,0],[-0.78,0.6,0],[0.15,0.15,0.15]);triangle([-0.7,0.55,0],[-0.6,0.65,0],[-0.72,0.6,0],[0.15,0.15,0.15]);
+      triangle([-0.2,0.8,0],[-0.1,0.7,0],[-0.18,0.75,0],[0.15,0.15,0.15]);triangle([-0.1,0.7,0],[0,0.8,0],[-0.12,0.75,0],[0.15,0.15,0.15]);
+      rectangle(-0.88,-0.3,-0.92,0.1,[0.55,0.27,0.07]);triangle([-1.2,0,0],[-0.7,0,0],[-0.89,0.2,0],[0.13,0.55,0.13]);triangle([-1.2,0.18,0],[-0.7,0.18,0],[-0.89,0.32,0],[0.13,0.55,0.13]);triangle([-0.99,0.3,0],[-0.8,0.3,0],[-0.89,0.4,0],[0.13,0.55,0.13]);
+      var aPos=gl.getAttribLocation(program,"a_position"),buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);gl.vertexAttribPointer(aPos,3,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(aPos);
+      var aColor=gl.getAttribLocation(program,"a_color"),cBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,cBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(colors),gl.STATIC_DRAW);gl.vertexAttribPointer(aColor,3,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(aColor);
+      var aMov=gl.getAttribLocation(program,"a_movable"),mBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,mBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(movable),gl.STATIC_DRAW);gl.vertexAttribPointer(aMov,1,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(aMov);
+      var u_carshift=gl.getUniformLocation(program,"u_carshift");
       draw();
     </script>
   </body>
